@@ -1,73 +1,72 @@
 package search
 
 import (
-	"fmt"
-	"sort"
 	"strings"
+	"sync"
 
 	"github.com/agnivade/levenshtein"
-	"github.com/swanckel93/fuzzy_api/models"
 )
 
-func FuzzySearch(query string, sentences []string) []models.SearchResult {
-	type resultWithScore struct {
-		models.SearchResult
-	}
+// SearchResult represents a fuzzy match result
+type SearchResult struct {
+	Sentence string `json:"sentence"`
+	Index    int    `json:"index"`
+	Match    string `json:"match"`
+	Distance int    `json:"distance"`
+}
 
-	var results []resultWithScore
-	loweredQuery := strings.ToLower(query)
-
-	fmt.Printf("Starting fuzzy search for query: %s\n", loweredQuery)
+// FuzzySearch performs a fuzzy search for a query in a slice of sentences using goroutines.
+func FuzzySearch(query string, sentences []string) []SearchResult {
+	var wg sync.WaitGroup
+	resultsChan := make(chan SearchResult, len(sentences))
 
 	for i, sentence := range sentences {
-		loweredSentence := strings.ToLower(sentence)
+		wg.Add(1)
 
-		// Check if the sentence contains the query word
-		if strings.Contains(loweredSentence, loweredQuery) {
-			// If it contains the word, set Levenshtein distance to 0
-			fmt.Printf("Sentence %d: \"%s\" contains the query. Distance set to 0.\n", i, sentence)
-			results = append(results, resultWithScore{
-				SearchResult: models.SearchResult{
-					Sentence: sentence,
-					Index:    i,
-					Match:    query,
-					Distance: 0,
-				},
-			})
-		} else {
-			// If it doesn't contain the word, calculate the Levenshtein distance
-			distance := levenshtein.ComputeDistance(loweredQuery, loweredSentence)
-			fmt.Printf("Sentence %d: \"%s\"\n", i, sentence)
-			fmt.Printf("Lowered: \"%s\"\n", loweredSentence)
-			fmt.Printf("Levenshtein distance: %d\n", distance)
-
-			if distance < len(loweredQuery) {
-				fmt.Println("-> Accepted (distance threshold passed)")
-				results = append(results, resultWithScore{
-					SearchResult: models.SearchResult{
-						Sentence: sentence,
-						Index:    i,
-						Match:    query,
-						Distance: distance,
-					},
-				})
-			} else {
-				fmt.Println("-> Skipped (distance too high)")
+		go func(idx int, s string) {
+			defer wg.Done()
+			bestMatch, bestIndex, bestDist := findBestFuzzyMatch(query, s)
+			if bestMatch != "" {
+				resultsChan <- SearchResult{
+					Sentence: s,
+					Index:    bestIndex,
+					Match:    bestMatch,
+					Distance: bestDist,
+				}
 			}
+		}(i, sentence)
+	}
+
+	wg.Wait()
+	close(resultsChan)
+
+	var results []SearchResult
+	for result := range resultsChan {
+		results = append(results, result)
+	}
+
+	return results
+}
+
+// findBestFuzzyMatch finds the substring in `sentence` that best matches `query` using Levenshtein distance.
+func findBestFuzzyMatch(query, sentence string) (match string, index int, distance int) {
+	queryLen := len(query)
+	sentenceLower := strings.ToLower(sentence)
+	queryLower := strings.ToLower(query)
+
+	bestDistance := -1
+	bestMatch := ""
+	bestIndex := -1
+
+	for i := 0; i <= len(sentenceLower)-queryLen; i++ {
+		substr := sentenceLower[i : i+queryLen]
+		dist := levenshtein.ComputeDistance(substr, queryLower)
+		if bestDistance == -1 || dist < bestDistance {
+			bestDistance = dist
+			bestMatch = sentence[i : i+queryLen]
+			bestIndex = i
 		}
 	}
 
-	// Sort results by distance
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Distance < results[j].Distance
-	})
-
-	// Take top 10 results
-	top := []models.SearchResult{}
-	for i := 0; i < len(results) && i < 10; i++ {
-		top = append(top, results[i].SearchResult)
-	}
-
-	fmt.Printf("Returning %d result(s)\n", len(top))
-	return top
+	return bestMatch, bestIndex, bestDistance
 }

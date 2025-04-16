@@ -16,8 +16,12 @@ func main() {
 	mux.HandleFunc("/search", handler.SearchHandler)
 	mux.HandleFunc("/expand-context", handler.ExpandContextHandler)
 
+	loggedMux := handler.Logger(mux)
+
+
 	log.Println("Server listening on http://localhost:8080")
-	err := http.ListenAndServe(":8080", mux)
+
+	err := http.ListenAndServe(":8080", loggedMux)
 	if err != nil {
 		log.Fatal("Server failed:", err)
 	}

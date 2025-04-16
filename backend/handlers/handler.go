@@ -2,13 +2,15 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"github.com/swanckel93/fuzzy_api/models"
 	"github.com/swanckel93/fuzzy_api/search"
 	"github.com/swanckel93/fuzzy_api/storage"
 	"github.com/swanckel93/fuzzy_api/utils"
 	"io"
 	"net/http"
+	"time"
+	"log"
 )
 
 // enableCors sets headers for CORS, including preflight support
@@ -70,7 +72,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		return
 	}
-	fmt.Println("Executing Search Handler...")
+	// fmt.Println("Executing Search Handler...")
 	var req models.SearchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -84,7 +86,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := search.FuzzySearch(req.Query, sentences)
-	fmt.Printf("%q\n", results)
+	// fmt.Printf("%q\n", results)
 	json.NewEncoder(w).Encode(results)
 }
 
@@ -113,3 +115,35 @@ func ExpandContextHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Logger middleware for logging requests and response status
+func Logger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Create a custom response writer to capture the status code
+		writer := &statusCodeWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		// Call the next handler in the chain
+		next.ServeHTTP(writer, r)
+
+		// Log the details of the request
+		log.Printf(
+			"%s %s %d %s", // log: method, route, status code, duration, user agent
+			r.Method,
+			r.URL.Path,
+			writer.statusCode,
+			time.Since(start), // Duration taken for the request
+		)
+	})
+}
+
+// Custom ResponseWriter to capture the status code
+type statusCodeWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (w *statusCodeWriter) WriteHeader(code int) {
+	w.statusCode = code
+	w.ResponseWriter.WriteHeader(code)
+}

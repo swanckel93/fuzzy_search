@@ -68,7 +68,6 @@ func ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(w, r)
 	if r.Method == http.MethodOptions {
-		fmt.Println("Something went wrong")
 		return
 	}
 	fmt.Println("Executing Search Handler...")
@@ -107,22 +106,10 @@ func ExpandContextHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	start := req.Index
-	end := req.Index + 1
-
-	if req.Index > 0 {
-		start--
-	}
-	if req.Index < len(sentences)-1 {
-		end++
-	}
-
-	context := ""
-	for i := start; i < end; i++ {
-		context += sentences[i] + " "
-	}
+	context := sentences[req.Index]
 
 	json.NewEncoder(w).Encode(map[string]string{
 		"context": context,
 	})
 }
+

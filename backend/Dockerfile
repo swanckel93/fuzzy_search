@@ -7,7 +7,10 @@ COPY go.sum ./
 RUN go mod download
 
 COPY . .
-
+RUN go install github.com/swaggo/swag/cmd/swag@latest && \
+    export PATH=$PATH:/go/bin && \
+    swag init
+    
 RUN go build -o main .
 
 EXPOSE 8080

@@ -5,15 +5,19 @@ import (
 	"net/http"
 
 	"github.com/swanckel93/fuzzy_api/handlers"
+	"github.com/swanckel93/fuzzy_api/searchCache"
 )
 
 func main() {
 	mux := http.NewServeMux()
+	cache := searchCache.NewSearchCache(50)
 
 	// Define routes
 	mux.HandleFunc("/upload", handler.UploadHandler)
 	mux.HandleFunc("/files", handler.ListFilesHandler)
-	mux.HandleFunc("/search", handler.SearchHandler)
+	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		handler.SearchHandler(w, r, cache)
+	})
 	mux.HandleFunc("/expand-context", handler.ExpandContextHandler)
 
 	loggedMux := handler.Logger(mux)

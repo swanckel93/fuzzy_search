@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   models.ExpandContextRequest:
     properties:
@@ -26,6 +27,9 @@ definitions:
     type: object
 info:
   contact: {}
+  description: A simple fuzzy text search API with file upload, search, and caching.
+  title: Fuzzy Search API
+  version: "1.0"
 paths:
   /expand-context:
     post:

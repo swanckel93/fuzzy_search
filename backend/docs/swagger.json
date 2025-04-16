@@ -1,8 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "A simple fuzzy text search API with file upload, search, and caching.",
+        "title": "Fuzzy Search API",
+        "contact": {},
+        "version": "1.0"
     },
+    "basePath": "/",
     "paths": {
         "/expand-context": {
             "post": {

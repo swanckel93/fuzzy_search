@@ -1,3 +1,7 @@
+// @title Fuzzy Search API
+// @version 1.0
+// @description A simple fuzzy text search API with file upload, search, and caching.
+// @BasePath /
 package main
 
 import (

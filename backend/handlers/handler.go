@@ -23,7 +23,17 @@ func enableCors(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 }
-
+// UploadHandler godoc
+// @Summary Upload a text file
+// @Description Uploads a file, splits it into sentences, and stores it for search
+// @Tags upload
+// @Accept multipart/form-data
+// @Produce plain
+// @Param file formData file true "Text file to upload"
+// @Success 200 {string} string "File uploaded successfully"
+// @Failure 400 {string} string "Unable to parse form or retrieve file"
+// @Failure 500 {string} string "Error reading file"
+// @Router /upload [post]
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(w, r)
 	if r.Method == http.MethodOptions {
@@ -58,6 +68,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("File uploaded successfully"))
 }
 
+// ListFilesHandler godoc
+// @Summary List uploaded files
+// @Description Returns a list of filenames currently stored in memory
+// @Tags files
+// @Produce json
+// @Success 200 {array} string
+// @Router /files [get]
 func ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(w, r)
 	if r.Method == http.MethodOptions {
@@ -68,6 +85,17 @@ func ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(files)
 }
 
+// SearchHandler godoc
+// @Summary Perform a fuzzy search
+// @Description Searches the uploaded file with fuzzy matching and returns matched sentences
+// @Tags search
+// @Accept json
+// @Produce json
+// @Param request body models.SearchRequest true "Search input"
+// @Success 200 {array} search.SearchResult
+// @Failure 400 {string} string "Invalid request"
+// @Failure 404 {string} string "File not found"
+// @Router /search [post]
 func SearchHandler(w http.ResponseWriter, r *http.Request, cache *searchCache.SearchCache) {
 	enableCors(w, r)
 
@@ -115,6 +143,16 @@ func SearchHandler(w http.ResponseWriter, r *http.Request, cache *searchCache.Se
 	json.NewEncoder(w).Encode(results)
 }
 
+// ExpandContextHandler godoc
+// @Summary Expand context for a matched sentence
+// @Description Returns the sentence at the given index from the uploaded file
+// @Tags context
+// @Accept json
+// @Produce json
+// @Param request body models.ExpandContextRequest true "Context input"
+// @Success 200 {object} map[string]string
+// @Failure 400 {string} string "Invalid request or index"
+// @Router /expand-context [post]
 func ExpandContextHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(w, r)
 	if r.Method == http.MethodOptions {

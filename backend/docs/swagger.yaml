@@ -1,0 +1,135 @@
+definitions:
+  models.ExpandContextRequest:
+    properties:
+      file_id:
+        type: string
+      index:
+        type: integer
+    type: object
+  models.SearchRequest:
+    properties:
+      file_id:
+        type: string
+      query:
+        type: string
+    type: object
+  search.SearchResult:
+    properties:
+      distance:
+        type: integer
+      index:
+        type: integer
+      match:
+        type: string
+      sentence:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /expand-context:
+    post:
+      consumes:
+      - application/json
+      description: Returns the sentence at the given index from the uploaded file
+      parameters:
+      - description: Context input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExpandContextRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request or index
+          schema:
+            type: string
+      summary: Expand context for a matched sentence
+      tags:
+      - context
+  /files:
+    get:
+      description: Returns a list of filenames currently stored in memory
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List uploaded files
+      tags:
+      - files
+  /search:
+    post:
+      consumes:
+      - application/json
+      description: Searches the uploaded file with fuzzy matching and returns matched
+        sentences
+      parameters:
+      - description: Search input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SearchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/search.SearchResult'
+            type: array
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "404":
+          description: File not found
+          schema:
+            type: string
+      summary: Perform a fuzzy search
+      tags:
+      - search
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a file, splits it into sentences, and stores it for search
+      parameters:
+      - description: Text file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: File uploaded successfully
+          schema:
+            type: string
+        "400":
+          description: Unable to parse form or retrieve file
+          schema:
+            type: string
+        "500":
+          description: Error reading file
+          schema:
+            type: string
+      summary: Upload a text file
+      tags:
+      - upload
+swagger: "2.0"

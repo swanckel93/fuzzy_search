@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"github.com/swanckel93/fuzzy_api/models"
 	"github.com/swanckel93/fuzzy_api/search"
 	"github.com/swanckel93/fuzzy_api/searchCache"
@@ -109,37 +109,23 @@ func SearchHandler(w http.ResponseWriter, r *http.Request, cache *searchCache.Se
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	fmt.Println("Getting Sentences from storage")
+	// 1. Try cache first
+	cachedResults, found := cache.Get(req.FileID, req.Query)
+	if found {
+		json.NewEncoder(w).Encode(cachedResults)
+		return
+	}
 
-	// Get sentences for the given FileID from storage
+	// 2. Only fetch from storage if necessary
 	sentences, ok := storage.GetFile(req.FileID)
 	if !ok {
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
-	fmt.Println("Got Sentences from storage")
 
-	// Try to get the cached results
-	fmt.Println("Attempting to find query in cache")
-
-	cachedResults, found := cache.Get(req.FileID, req.Query)
-	if found {
-		// Return the cached results if found
-		json.NewEncoder(w).Encode(cachedResults)
-		fmt.Println("Cache hit! Skipping Fzzy Search...")
-
-		return
-	}
-	fmt.Println("Not found in Cache. Fuzzysearching...")
-
-	// Perform fuzzy search if not found in cache
+	// 3. Do fuzzy search, cache, respond
 	results := search.FuzzySearch(req.Query, sentences)
-
-	// Cache the results for future use
 	cache.Set(req.FileID, req.Query, results)
-	fmt.Println("Setting search results to cache")
-
-	// Return the results (either from cache or freshly computed)
 	json.NewEncoder(w).Encode(results)
 }
 

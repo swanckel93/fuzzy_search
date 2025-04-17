@@ -3,7 +3,7 @@ package search
 import (
 	"strings"
 	"sync"
-
+	"sort"
 	"github.com/agnivade/levenshtein"
 )
 
@@ -44,7 +44,12 @@ func FuzzySearch(query string, sentences []string) []SearchResult {
 	for result := range resultsChan {
 		results = append(results, result)
 	}
-
+	if len(results) > 0 {
+		SortSearchResults(results)
+	}
+	if len(results)> 10 {
+		return results[:10]
+	}
 	return results
 }
 
@@ -69,4 +74,16 @@ func findBestFuzzyMatch(query, sentence string) (match string, index int, distan
 	}
 
 	return bestMatch, bestIndex, bestDistance
+}
+
+func SortSearchResults(searchResults []SearchResult) {
+    sort.SliceStable(searchResults, func(i, j int) bool {
+        mi, mj := searchResults[i], searchResults[j]
+        switch {
+        case mi.Distance != mj.Distance:
+            return mi.Distance < mj.Distance
+        default:
+            return mi.Index < mj.Index
+        }
+    })
 }

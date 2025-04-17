@@ -72,3 +72,31 @@ func TestFuzzySearch(t *testing.T) {
 		})
 	}
 }
+
+func TestFuzzySearchOrdering(t *testing.T) {
+	query := "cat"
+	sentences := []string{
+		"The cat is on the mat",
+		"A catalog of items",
+		"That was a catastrophe",
+		"Cats are cute",
+		"Concatenate the strings",
+	}
+
+	results := FuzzySearch(query, sentences)
+
+	if len(results) < 2 {
+		t.Fatalf("Expected at least 2 results, got %d", len(results))
+	}
+
+	for i := 0; i < len(results)-1; i++ {
+		a := results[i]
+		b := results[i+1]
+
+		if a.Distance > b.Distance {
+			t.Errorf("Results not sorted by distance at index %d: got %d > %d", i, a.Distance, b.Distance)
+		} else if a.Distance == b.Distance && a.Index > b.Index {
+			t.Errorf("Results not sorted by index when distances equal at index %d: got %d > %d", i, a.Index, b.Index)
+		}
+	}
+}
